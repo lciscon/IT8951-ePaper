@@ -109,8 +109,8 @@ int main(int argc, char *argv[])
     Panel_Height = Dev_Info.Panel_H;
     Init_Target_Memory_Addr = Dev_Info.Memory_Addr_L | (Dev_Info.Memory_Addr_H << 16);
     //char* LUT_Version = (char*)Dev_Info.LUT_Version;
-    //char* LUT_Version = (char*)"M841_TFA2812";
-    char* LUT_Version = (char*)"M841_TFA5210"; 
+    char* LUT_Version = (char*)"M841_TFA2812";
+    //char* LUT_Version = (char*)"M841_TFA5210"; 
     Debug("LUT Mod Version = %s\r\n", LUT_Version);
 
     if( strcmp(LUT_Version, "M641") == 0 ){

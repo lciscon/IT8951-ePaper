@@ -101,6 +101,8 @@ extern int EPD_BUSY_PIN;
 #define UWORD   uint16_t
 #define UDOUBLE uint32_t
 
+extern int EPD_CS_PIN;
+extern int EPD_BUSY_PIN;
 
 
 /*------------------------------------------------------------------------------------------------------*/

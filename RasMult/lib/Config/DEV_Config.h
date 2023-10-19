@@ -64,6 +64,7 @@
  * GPIO
  **/
  
+/* 
 #define EPD_RST_PIN    18
 extern int EPD_CS_PIN;
 #define EPD_CS_PIN_2   17
@@ -71,6 +72,27 @@ extern int EPD_CS_PIN;
 extern int EPD_BUSY_PIN;
 #define EPD_BUSY_PIN_2 15
 #define EPD_BUSY_PIN_3 4
+*/
+
+/* V1 hardware*/
+/*
+#define EPD_RST_PIN    18
+#define EPD_CS_PIN_1   17
+#define EPD_CS_PIN_2   14
+#define EPD_CS_PIN_3   3
+#define EPD_BUSY_PIN_1 15
+#define EPD_BUSY_PIN_2 4
+#define EPD_BUSY_PIN_3 2
+*/
+
+/* V2 hardware*/
+#define EPD_RST_PIN    17
+#define EPD_CS_PIN_1   27
+#define EPD_CS_PIN_2   23
+#define EPD_CS_PIN_3   24
+#define EPD_BUSY_PIN_1 4
+#define EPD_BUSY_PIN_2 0
+#define EPD_BUSY_PIN_3 22
 
 /**
  * data

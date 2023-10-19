@@ -67,13 +67,14 @@ int main(int argc, char *argv[])
 {
     //Exception handling:ctrl + c
     signal(SIGINT, Handler);
-
+    int screen = 1;
+    
     if (argc < 2){
         Debug("Please input VCOM value on FPC cable!!\r\n");
         Debug("Example: sudo ./epd -2.51\r\n");
         exit(1);
     }
-	if (argc != 3){
+	if (argc < 3){
 		Debug("Please input e-Paper display mode!\r\n");
 		Debug("Example: sudo ./epd -2.51 0 or sudo ./epd -2.51 1\r\n");
 		Debug("Now, 10.3 inch glass panle is mode1, else is mode0\r\n");
@@ -85,7 +86,10 @@ int main(int argc, char *argv[])
     if(DEV_Module_Init()!=0){
         return -1;
     }
-//*****************************Do not swap screens before Dev_Module_Init *****************************
+
+    if (arc > 3) {
+        sscanf(argv[3],"%d",&screen);
+    }
     
 
     double temp;
@@ -94,8 +98,10 @@ int main(int argc, char *argv[])
     Debug("VCOM value:%d\r\n", VCOM);
 	sscanf(argv[2],"%d",&epd_mode);
     Debug("Display mode:%d\r\n", epd_mode);
-    swapSCREEN(3);                             // calling screen swap function from DEV_Config
-   Dev_Info = EPD_IT8951_Init(VCOM);           // must reinitalize to work properly after swap I don't think all of the routines in this function are necessary here, it currently takes a few seconds for this funciton to run
+
+    Debug("\r\nDefault display screen:%d\r\n",screen);
+    swapSCREEN(screen);   //select the screen IO pins
+    Dev_Info = EPD_IT8951_Init(VCOM);           // must reinitalize to work properly after swap I don't think all of the routines in this function are necessary here, it currently takes a few seconds for this funciton to run
 
     //EPD_IT8951_SystemRun();
 
@@ -163,7 +169,6 @@ int main(int argc, char *argv[])
     EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
     
 
-    swapSCREEN(2);                       // calling screen swap function from DEV_Config
     Dev_Info = EPD_IT8951_Init(VCOM);   // must reinitalize to work properly after swap I don't think all of the routines in this function are necessary here, it currently takes a few seconds for this funciton to run
     
     //Show a bmp file

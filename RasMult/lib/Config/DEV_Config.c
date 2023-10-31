@@ -118,27 +118,27 @@ static void DEV_GPIO_Mode(UWORD Pin, UWORD Mode)
  * GPIO Init
 **/
 
-int EPD_CS_PIN = 3;
-int EPD_BUSY_PIN = 2;
+int EPD_CS_PIN = EPD_CS_PIN_1;
+int EPD_BUSY_PIN = EPD_BUSY_PIN_1;
 
  void swapSCREEN(int screen)
 {
 	switch(screen) {
 	
-	case 1 :
-		EPD_CS_PIN = 17;
-		EPD_BUSY_PIN = 15;
-		break;
-	
-	case 2 :
-		EPD_CS_PIN = 14;
-		EPD_BUSY_PIN = 4;
-		break;
-	
-	case 3 :
-		EPD_CS_PIN = 3;
-		EPD_BUSY_PIN = 2;
-		break;
+       case 1 :
+                EPD_CS_PIN = EPD_CS_PIN_1;
+                EPD_BUSY_PIN = EPD_BUSY_PIN_1;
+                break;
+
+        case 2 :
+                EPD_CS_PIN = EPD_CS_PIN_2;
+                EPD_BUSY_PIN = EPD_BUSY_PIN_2;
+                break;
+
+        case 3 :
+                EPD_CS_PIN = EPD_CS_PIN_3;
+                EPD_BUSY_PIN = EPD_BUSY_PIN_3;
+                break;
 		
 	default:
 		break;
@@ -147,16 +147,17 @@ int EPD_BUSY_PIN = 2;
 
 }
 
+
 static void DEV_GPIO_Init(void)
 {
 	DEV_GPIO_Mode(EPD_RST_PIN, BCM2835_GPIO_FSEL_OUTP);
-	DEV_GPIO_Mode(EPD_CS_PIN, BCM2835_GPIO_FSEL_OUTP);
+	DEV_GPIO_Mode(EPD_CS_PIN_1, BCM2835_GPIO_FSEL_OUTP);
 	DEV_GPIO_Mode(EPD_CS_PIN_2, BCM2835_GPIO_FSEL_OUTP);
 	DEV_GPIO_Mode(EPD_CS_PIN_3, BCM2835_GPIO_FSEL_OUTP);
-	DEV_GPIO_Mode(EPD_BUSY_PIN, BCM2835_GPIO_FSEL_INPT);
+	DEV_GPIO_Mode(EPD_BUSY_PIN_1, BCM2835_GPIO_FSEL_INPT);
 	DEV_GPIO_Mode(EPD_BUSY_PIN_2, BCM2835_GPIO_FSEL_INPT);
 	DEV_GPIO_Mode(EPD_BUSY_PIN_3, BCM2835_GPIO_FSEL_INPT);
-	DEV_Digital_Write(EPD_CS_PIN, HIGH); //deactivating all cs pins
+	DEV_Digital_Write(EPD_CS_PIN_1, HIGH); //deactivating all cs pins
 	DEV_Digital_Write(EPD_CS_PIN_2, HIGH); 
 	DEV_Digital_Write(EPD_CS_PIN_3, HIGH);
 	

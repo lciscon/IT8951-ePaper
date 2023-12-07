@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if (arc > 3) {
+    if (argc > 3) {
         sscanf(argv[3],"%d",&screen);
     }
     

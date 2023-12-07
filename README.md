@@ -25,7 +25,9 @@ make
 
 sudo make check
 
-sudo make install## Hardware:
+sudo make install
+
+## Hardware:
 
 PCF8574 Remote 8-bit I/O I2C expander
 Hitachi HD44780 2x16 5x7 LCD display
@@ -34,5 +36,7 @@ Raspberry Pi 3 Model B+
 ## Installation ##
 
 git clone https://github.com/lciscon/IT8951-ePaper.git
+
 cd IT8951-ePaper/RasMult
+
 make

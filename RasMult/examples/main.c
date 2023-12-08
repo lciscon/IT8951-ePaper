@@ -15,7 +15,7 @@
 
 #define USE_Touch_Panel false
 
-UWORD VCOM = 2510;
+UWORD VCOM = 2050;
 
 IT8951_Dev_Info Dev_Info = {0, 0};
 UWORD Panel_Width;
@@ -68,18 +68,11 @@ int main(int argc, char *argv[])
     //Exception handling:ctrl + c
     signal(SIGINT, Handler);
     int screen = 1;
-    
+
     if (argc < 2){
-        Debug("Please input VCOM value on FPC cable!!\r\n");
-        Debug("Example: sudo ./epd -2.51\r\n");
+        Debug("Please input which screen to control (1-3)\r\n");
+        Debug("Example: sudo ./epd 1\r\n");
         exit(1);
-    }
-	if (argc < 3){
-		Debug("Please input e-Paper display mode!\r\n");
-		Debug("Example: sudo ./epd -2.51 0 or sudo ./epd -2.51 1\r\n");
-		Debug("Now, 10.3 inch glass panle is mode1, else is mode0\r\n");
-		Debug("If you don't know what to type in just type 0 \r\n");
-		exit(1);
     }
 
     //Init the BCM2835 Device
@@ -87,19 +80,22 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if (argc > 3) {
-        sscanf(argv[3],"%d",&screen);
-    }
-    
+    sscanf(argv[1],"%d",&screen);
 
-    double temp;
-    sscanf(argv[1],"%lf",&temp);
-    VCOM = (UWORD)(fabs(temp)*1000);
+    if (argc > 2) {
+        double temp;
+        sscanf(argv[2],"%lf",&temp);
+        VCOM = (UWORD)(fabs(temp)*1000);
+    }
+
+    if (argc > 3) {
+	    sscanf(argv[3],"%d",&epd_mode);
+    }
+
+    Debug("\r\nDisplay screen:%d\r\n",screen);
     Debug("VCOM value:%d\r\n", VCOM);
-	sscanf(argv[2],"%d",&epd_mode);
     Debug("Display mode:%d\r\n", epd_mode);
 
-    Debug("\r\nDefault display screen:%d\r\n",screen);
     swapSCREEN(screen);   //select the screen IO pins
     Dev_Info = EPD_IT8951_Init(VCOM);           // must reinitalize to work properly after swap I don't think all of the routines in this function are necessary here, it currently takes a few seconds for this funciton to run
 

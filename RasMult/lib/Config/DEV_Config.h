@@ -86,7 +86,9 @@ extern int EPD_BUSY_PIN;
 */
 
 /* V2 hardware*/
-#define EPD_RST_PIN    17
+#define EPD_RST_PIN_1    17
+#define EPD_RST_PIN_2    5
+#define EPD_RST_PIN_3    6
 #define EPD_CS_PIN_1   27
 #define EPD_CS_PIN_2   23
 #define EPD_CS_PIN_3   24
@@ -103,6 +105,7 @@ extern int EPD_BUSY_PIN;
 
 extern int EPD_CS_PIN;
 extern int EPD_BUSY_PIN;
+extern int EPD_RST_PIN;
 
 
 /*------------------------------------------------------------------------------------------------------*/

@@ -6,8 +6,10 @@ DIR_Examples = ./examples
 
 DIR_BIN      = ./bin
 
+OBJ_CPP = $(wildcard ${DIR_Config}/*.cpp ${DIR_EPD}/*.cpp ${DIR_FONTS}/*.cpp ${DIR_GUI}/*.cpp ${DIR_Examples}/*.cpp )
 OBJ_C = $(wildcard ${DIR_Config}/*.c ${DIR_EPD}/*.c ${DIR_FONTS}/*.c ${DIR_GUI}/*.c ${DIR_Examples}/*.c )
 OBJ_O = $(patsubst %.c,${DIR_BIN}/%.o,$(notdir ${OBJ_C}))
+OBJ_OPP = $(patsubst %.cpp,${DIR_BIN}/%.o,$(notdir ${OBJ_CPP}))
 
 TARGET = epd
 
@@ -23,8 +25,14 @@ LIB = -lbcm2835 -lm -lrt -lpthread
 
 $(shell mkdir -p $(DIR_BIN))
 
-${TARGET}:${OBJ_O}
+${TARGET}:${OBJ_O} ${OBJ_OPP}
 	$(CC) $(CFLAGS) $(OBJ_O) -o $@ $(LIB) 
+
+${DIR_BIN}/%.o:$(DIR_Examples)/%.cpp
+    $(CC) $(CFLAGS) -c  $< -o $@
+
+${DIR_BIN}/%.o:$(DIR_Wacom)/%.cpp
+    $(CC) $(CFLAGS) -c  $< -o $@
 
 ${DIR_BIN}/%.o:$(DIR_Config)/%.c
 	$(CC) $(CFLAGS) -c  $< -o $@ 

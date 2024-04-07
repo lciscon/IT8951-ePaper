@@ -2,6 +2,7 @@
 #include "../lib/Wacom/BasicTypes.h"
 #include "example.h"
 #include "../lib/GUI/GUI_BMPfile.h"
+#include "../lib/GUI/GUI_Paint.h"
 #include "../lib/Wacom/WacomI2CHandler.h"
 
 #include <math.h>
@@ -19,7 +20,11 @@
 
 UWORD VCOM = 2050;
 
+const int TABLET_I2C_ADDRESS = 9;
+
 WacomI2CHandler *tabletHandler;
+
+struct DeviceInfo deviceInfo;
 
 struct TabletData tabletData;
 
@@ -81,7 +86,7 @@ void  Handler(int signo){
 int paintBrush(double X_Center, double Y_Center, double Radius, bool touchDown) {
 
     Paint_DrawCircle(X_Center, Y_Center, Radius, 0x50, DOT_PIXEL_2X2, DRAW_FILL_FULL);
-    EPD_IT8951_8bp_Refresh(Refresh_Frame_Buf, 0, 0, Display_Area_Width,  Display_Area_Height, false, Init_Target_Memory_Addr);
+    EPD_IT8951_8bp_Refresh(Refresh_Frame_Buf, 0, 0, Panel_Width,  Panel_Height, false, Init_Target_Memory_Addr);
 
 }
 
@@ -171,7 +176,7 @@ int main(int argc, char *argv[])
 	EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
 
     //display the background
-    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4){
+    Display_BMP_Example(UWORD Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4);
 
     //process the loop
     handleTasks();

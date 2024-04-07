@@ -1,6 +1,7 @@
 #ifndef _BASIC_TYPES_H
 #define _BASIC_TYPES_H
 
+#include <stdlib.h>     //exit()
 #include <string>
 
 /**

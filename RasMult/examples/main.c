@@ -1,6 +1,8 @@
 #include "../lib/Config/DEV_Config.h"
+#include "../lib/Wacom/BasicTypes.h"
 #include "example.h"
 #include "../lib/GUI/GUI_BMPfile.h"
+#include "../lib/Wacom/WacomI2CHandler.h"
 
 #include <math.h>
 
@@ -16,6 +18,10 @@
 #define USE_Touch_Panel false
 
 UWORD VCOM = 2050;
+
+WacomI2CHandler *tabletHandler;
+
+struct TabletData tabletData;
 
 IT8951_Dev_Info Dev_Info = {0, 0};
 UWORD Panel_Width;
@@ -63,6 +69,52 @@ void  Handler(int signo){
 }
 
 
+//-------------------------------------------------------------------------------------------------
+// ::paintBrush
+//
+/**
+ * 
+ * Paint the brush at a specific point on the screen.
+ * 
+ */
+
+int paintBrush(double X_Center, double Y_Center, double Radius, bool touchDown) {
+
+    Paint_DrawCircle(X_Center, Y_Center, Radius, 0x50, DOT_PIXEL_2X2, DRAW_FILL_FULL);
+    EPD_IT8951_8bp_Refresh(Refresh_Frame_Buf, 0, 0, Display_Area_Width,  Display_Area_Height, false, Init_Target_Memory_Addr);
+
+}
+
+//-------------------------------------------------------------------------------------------------
+// ::handleTasks
+//
+/**
+ * 
+ * Handles all runtime tasks such as polling the tablet and updating the mouse status.
+ * 
+ */
+
+int handleTasks() {
+
+    int i = 0;
+
+    while(1){
+        
+        tabletHandler->queryPenData();
+
+        paintBrush(tabletData.transformedX, tabletData.transformedY, 20, tabletData.touchDown);
+
+        if(deviceInfo.refreshRateUS > 0){
+            usleep(deviceInfo.refreshRateUS);
+        }
+
+    }
+
+    return 0;
+
+}// end of ::HandleTasks
+
+
 int main(int argc, char *argv[])
 {
     //Exception handling:ctrl + c
@@ -99,109 +151,37 @@ int main(int argc, char *argv[])
     swapSCREEN(screen);   //select the screen IO pins
     Dev_Info = EPD_IT8951_Init(VCOM);           // must reinitalize to work properly after swap I don't think all of the routines in this function are necessary here, it currently takes a few seconds for this funciton to run
 
-    //EPD_IT8951_SystemRun();
+    tabletHandler = new WacomI2CHandler(&deviceInfo, &tabletData);
+    tabletHandler->init();
 
-#if(Enhance)
-    Debug("Attention! Enhanced driving ability, only used when the screen is blurred\r\n");
-    Enhance_Driving_Capability();
-#endif
+    tabletHandler->start(deviceInfo.i2cBusName.c_str(), TABLET_I2C_ADDRESS);
+
+    tabletHandler->queryDeviceInfo();
 
     //get some important info from Dev_Info structure
     Panel_Width = Dev_Info.Panel_W;
     Panel_Height = Dev_Info.Panel_H;
     Init_Target_Memory_Addr = Dev_Info.Memory_Addr_L | (Dev_Info.Memory_Addr_H << 16);
-    //char* LUT_Version = (char*)Dev_Info.LUT_Version;
     char* LUT_Version = (char*)"M841_TFA2812";
-    //char* LUT_Version = (char*)"M841_TFA5210"; 
     Debug("LUT Mod Version = %s\r\n", LUT_Version);
-
-    if( strcmp(LUT_Version, "M641") == 0 ){
-        //6inch e-Paper HAT(800,600), 6inch HD e-Paper HAT(1448,1072), 6inch HD touch e-Paper HAT(1448,1072)
-        A2_Mode = 4;
-        Four_Byte_Align = true;
-    }else if( strcmp(LUT_Version, "M841_TFAB512") == 0 ){
-        //Another firmware version for 6inch HD e-Paper HAT(1448,1072), 6inch HD touch e-Paper HAT(1448,1072)
-        A2_Mode = 6;
-        Four_Byte_Align = true;
-    }else if( strcmp(LUT_Version, "M841") == 0 ){
-        //9.7inch e-Paper HAT(1200,825)
-        A2_Mode = 6;
-    }else if( strcmp(LUT_Version, "M841_TFA2812") == 0 ){
-        //7.8inch e-Paper HAT(1872,1404)
-        A2_Mode = 6;
-    }else if( strcmp(LUT_Version, "M841_TFA5210") == 0 ){
-        //10.3inch e-Paper HAT(1872,1404)
-        A2_Mode = 6;
-    }else{
-        //default set to 6 as A2 Mode
-        A2_Mode = 6;
-    }
+    A2_Mode = 6;
     Debug("A2 Mode:%d\r\n", A2_Mode);
 
+    //clear the screen
 	EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
 
-#if(USE_Factory_Test)
-	if(epd_mode == 3) 	// Color Test
-		Color_Test(Dev_Info, Init_Target_Memory_Addr);
-    else				// Normal Test
-		Factory_Test_Only(Dev_Info, Init_Target_Memory_Addr);
-#endif
+    //display the background
+    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4){
 
-
-#if(USE_Normal_Demo)
-    //Show 16 grayscale
-    //Display_ColorPalette_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr);
-	//EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
-
-    //Show some character and pattern
-    Display_CharacterPattern_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
-
-    //Show a bmp file
-    //1bp use A2 mode by default, before used it, refresh the screen with WHITE
-    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_1);
-    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_2);
-    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
-    
-
-    Dev_Info = EPD_IT8951_Init(VCOM);   // must reinitalize to work properly after swap I don't think all of the routines in this function are necessary here, it currently takes a few seconds for this funciton to run
-    
-    //Show a bmp file
-    //1bp use A2 mode by default, before used it, refresh the screen with WHITE
-    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_1);
-    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_2);
-    Display_BMP_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
-    
-    //Show A2 mode refresh effect
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, A2_Mode);
-    Dynamic_Refresh_Example(Dev_Info,Init_Target_Memory_Addr);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, A2_Mode);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
-	
-    //Show how to display a gif, not works well on 6inch e-Paper HAT, 9.7inch e-Paper HAT, others work well
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, A2_Mode);
-    Dynamic_GIF_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, A2_Mode);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
-
-    //Show how to test frame rate, test it individually,which is related to refresh area size and refresh mode
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, A2_Mode);
-    Check_FrameRate_Example(800, 600, Init_Target_Memory_Addr, BitsPerPixel_1);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, A2_Mode);
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, GC16_Mode);
-#endif
-
-
-#if(USE_Touch_Panel)
-    //show a simple demo for hand-painted tablet, only support for <6inch HD touch e-Paper> at present
-    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
+    //process the loop
+    handleTasks();
     TouchPanel_ePaper_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr);
-#endif
+
 
     //We recommended refresh the panel to white color before storing in the warehouse.
     EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
+
+    tabletHandler->stop();
 
     //EPD_IT8951_Standby();
     //EPD_IT8951_Sleep();

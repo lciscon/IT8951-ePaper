@@ -26,7 +26,7 @@ LIB = -lbcm2835 -lm -lrt -lpthread
 $(shell mkdir -p $(DIR_BIN))
 
 ${TARGET}:${OBJ_O} ${OBJ_OPP}
-	$(CC) $(CFLAGS) $(OBJ_O) -o $@ $(LIB) 
+	$(CC) $(CFLAGS) $(OBJ_O) $(OBJ_OPP) -o $@ $(LIB) 
 
 ${DIR_BIN}/%.o:$(DIR_Examples)/%.cpp
     $(CC) $(CFLAGS) -c  $< -o $@

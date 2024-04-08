@@ -3,10 +3,11 @@ DIR_EPD      = ./lib/e-Paper
 DIR_FONTS    = ./lib/Fonts
 DIR_GUI      = ./lib/GUI
 DIR_Examples = ./examples
+DIR_Wacom = ./lib/Wacom
 
 DIR_BIN      = ./bin
 
-OBJ_CPP = $(wildcard ${DIR_Config}/*.cpp ${DIR_EPD}/*.cpp ${DIR_FONTS}/*.cpp ${DIR_GUI}/*.cpp ${DIR_Examples}/*.cpp )
+OBJ_CPP = $(wildcard ${DIR_Config}/*.cpp ${DIR_EPD}/*.cpp ${DIR_FONTS}/*.cpp ${DIR_GUI}/*.cpp ${DIR_Examples}/*.cpp ${DIR_Wacom}/*.cpp )
 OBJ_C = $(wildcard ${DIR_Config}/*.c ${DIR_EPD}/*.c ${DIR_FONTS}/*.c ${DIR_GUI}/*.c ${DIR_Examples}/*.c )
 OBJ_O = $(patsubst %.c,${DIR_BIN}/%.o,$(notdir ${OBJ_C}))
 OBJ_OPP = $(patsubst %.cpp,${DIR_BIN}/%.o,$(notdir ${OBJ_CPP}))
@@ -21,7 +22,7 @@ STD = -std=gnu99
 
 CFLAGS += $(MSG) $(DEBUG) $(STD)
 
-LIB = -lbcm2835 -lm -lrt -lpthread
+LIB = -lbcm2835 -lm -lrt -lpthread -lstdc++
 
 $(shell mkdir -p $(DIR_BIN))
 

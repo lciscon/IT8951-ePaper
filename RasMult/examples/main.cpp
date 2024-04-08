@@ -1,8 +1,10 @@
+extern "C" {
 #include "../lib/Config/DEV_Config.h"
-#include "../lib/Wacom/BasicTypes.h"
 #include "example.h"
 #include "../lib/GUI/GUI_BMPfile.h"
 #include "../lib/GUI/GUI_Paint.h"
+}
+#include "../lib/Wacom/BasicTypes.h"
 #include "../lib/Wacom/WacomI2CHandler.h"
 
 #include <math.h>
@@ -125,18 +127,19 @@ int main(int argc, char *argv[])
     //Exception handling:ctrl + c
     signal(SIGINT, Handler);
     int screen = 1;
+    int status; 
 
-    if (argc < 2){
-        Debug("Please input which screen to control (1-3)\r\n");
-        Debug("Example: sudo ./epd 1\r\n");
-        exit(1);
-    }
+    CommandLineArgumentHandler commandLineArgumentHandler(&deviceInfo); 
+    commandLineArgumentHandler.init();
+    status = commandLineArgumentHandler.processArguments(argc, argv);
+    if (status != 0){ return(status); }
 
     //Init the BCM2835 Device
     if(DEV_Module_Init()!=0){
         return -1;
     }
 
+/*
     sscanf(argv[1],"%d",&screen);
 
     if (argc > 2) {
@@ -148,6 +151,7 @@ int main(int argc, char *argv[])
     if (argc > 3) {
 	    sscanf(argv[3],"%d",&epd_mode);
     }
+*/
 
     Debug("\r\nDisplay screen:%d\r\n",screen);
     Debug("VCOM value:%d\r\n", VCOM);
@@ -176,7 +180,7 @@ int main(int argc, char *argv[])
 	EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
 
     //display the background
-    Display_BMP_Example(UWORD Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4);
+    Display_BMP_Example((char *)"/home/pi/Dev/docs/Notebook.bmp", Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4);
 
     //process the loop
     handleTasks();

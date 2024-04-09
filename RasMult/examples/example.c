@@ -184,7 +184,7 @@ parameter:
     Init_Target_Memory_Addr: Memory address of IT8951 target memory address
     BitsPerPixel: Bits Per Pixel, 2^BitsPerPixel = grayscale
 ******************************************************************************/
-UBYTE Display_BMP_Example(char *filename, UWORD Panel_Width, UWORD Panel_Height, UDOUBLE Init_Target_Memory_Addr, UBYTE BitsPerPixel){
+UBYTE Display_BMP_Example(char *filenm, UWORD Panel_Width, UWORD Panel_Height, UDOUBLE Init_Target_Memory_Addr, UBYTE BitsPerPixel){
     UWORD WIDTH;
     if(Four_Byte_Align == true){
         WIDTH  = Panel_Width - (Panel_Width % 32);
@@ -208,7 +208,7 @@ UBYTE Display_BMP_Example(char *filename, UWORD Panel_Width, UWORD Panel_Height,
     Paint_Clear(WHITE);
 
     char Path[30];
-    sprintf(Path,"./pic/%dx%d_0.bmp", WIDTH, HEIGHT);
+    sprintf(Path,filenm, WIDTH, HEIGHT);
 
     GUI_ReadBmp(Path, 0, 0);
 
@@ -219,22 +219,22 @@ UBYTE Display_BMP_Example(char *filename, UWORD Panel_Width, UWORD Panel_Height,
 
     switch(BitsPerPixel){
         case BitsPerPixel_8:{
-            Paint_DrawString_EN(10, 10, "8 bits per pixel 16 grayscale", &Font24, 0xF0, 0x00);
+            //Paint_DrawString_EN(10, 10, "8 bits per pixel 16 grayscale", &Font24, 0xF0, 0x00);
             EPD_IT8951_8bp_Refresh(Refresh_Frame_Buf, 0, 0, WIDTH,  HEIGHT, false, Init_Target_Memory_Addr);
             break;
         }
         case BitsPerPixel_4:{
-            Paint_DrawString_EN(10, 10, "4 bits per pixel 16 grayscale", &Font24, 0xF0, 0x00);
+            //Paint_DrawString_EN(10, 10, "4 bits per pixel 16 grayscale", &Font24, 0xF0, 0x00);
             EPD_IT8951_4bp_Refresh(Refresh_Frame_Buf, 0, 0, WIDTH,  HEIGHT, false, Init_Target_Memory_Addr,false);
             break;
         }
         case BitsPerPixel_2:{
-            Paint_DrawString_EN(10, 10, "2 bits per pixel 4 grayscale", &Font24, 0xC0, 0x00);
+            //Paint_DrawString_EN(10, 10, "2 bits per pixel 4 grayscale", &Font24, 0xC0, 0x00);
             EPD_IT8951_2bp_Refresh(Refresh_Frame_Buf, 0, 0, WIDTH,  HEIGHT, false, Init_Target_Memory_Addr,false);
             break;
         }
         case BitsPerPixel_1:{
-            Paint_DrawString_EN(10, 10, "1 bit per pixel 2 grayscale", &Font24, 0x80, 0x00);
+            //Paint_DrawString_EN(10, 10, "1 bit per pixel 2 grayscale", &Font24, 0x80, 0x00);
             EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf, 0, 0, WIDTH,  HEIGHT, A2_Mode, Init_Target_Memory_Addr,false);
             break;
         }
@@ -245,7 +245,7 @@ UBYTE Display_BMP_Example(char *filename, UWORD Panel_Width, UWORD Panel_Height,
         Refresh_Frame_Buf = NULL;
     }
 
-    DEV_Delay_ms(5000);
+    //DEV_Delay_ms(5000);
 
     return 0;
 }

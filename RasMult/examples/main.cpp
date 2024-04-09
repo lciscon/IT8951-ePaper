@@ -6,6 +6,7 @@ extern "C" {
 }
 #include "../lib/Wacom/BasicTypes.h"
 #include "../lib/Wacom/WacomI2CHandler.h"
+#include "CommandLineArgumentHandler.h"
 
 #include <math.h>
 
@@ -24,15 +25,19 @@ UWORD VCOM = 2050;
 
 const int TABLET_I2C_ADDRESS = 9;
 
-WacomI2CHandler *tabletHandler;
-
 struct DeviceInfo deviceInfo;
+
+WacomI2CHandler *tabletHandler;
 
 struct TabletData tabletData;
 
 IT8951_Dev_Info Dev_Info = {0, 0};
 UWORD Panel_Width;
 UWORD Panel_Height;
+UWORD brush_Radius = 32;
+
+UBYTE *Refresh_Frame_Buf2 = NULL;
+
 UDOUBLE Init_Target_Memory_Addr;
 int epd_mode = 0;	//0: no rotate, no mirror
 					//1: no rotate, horizontal mirror, for 10.3inch
@@ -75,6 +80,31 @@ void  Handler(int signo){
     exit(0);
 }
 
+int paintInit(UWORD Radius) {
+    UDOUBLE Imagesize;
+    UWORD dia = Radius*2;
+   
+    Debug("Paint init....\r\n");
+        //malloc enough memory for 1bp picture first
+    //Imagesize = ((Panel_Width * 1 % 8 == 0)? (Panel_Width * 1 / 8 ): (Panel_Width * 1 / 8 + 1)) * Panel_Height;
+    Imagesize = ((dia * 1 % 8 == 0)? (dia * 1 / 8 ): (dia * 1 / 8 + 1)) * dia;
+    if((Refresh_Frame_Buf2 = (UBYTE *)malloc(Imagesize)) == NULL){
+        Debug("Failed to apply for picture memory...\r\n");
+        return -1;
+    }
+
+    Paint_NewImage(Refresh_Frame_Buf2, dia, dia, 0, BLACK);
+    Paint_SelectImage(Refresh_Frame_Buf2);
+    //Epd_Mode(epd_mode);
+    Paint_SetBitsPerPixel(1);
+
+    Paint_Clear(BLACK);
+    //Paint_DrawRectangle(0, 0, dia-1, dia-1, 0x00, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+    //Paint_DrawCircle(Radius, Radius, Radius, 0x00, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+
+    //EPD_IT8951_1bp_Multi_Frame_Write(Refresh_Frame_Buf2, 0, 0, dia,  dia, Init_Target_Memory_Addr, true);
+    return(0);
+}
 
 //-------------------------------------------------------------------------------------------------
 // ::paintBrush
@@ -85,11 +115,24 @@ void  Handler(int signo){
  * 
  */
 
-int paintBrush(double X_Center, double Y_Center, double Radius, bool touchDown) {
+int paintBrush(UWORD x, UWORD y, UWORD dia) {
 
-    Paint_DrawCircle(X_Center, Y_Center, Radius, 0x50, DOT_PIXEL_2X2, DRAW_FILL_FULL);
-    EPD_IT8951_8bp_Refresh(Refresh_Frame_Buf, 0, 0, Panel_Width,  Panel_Height, false, Init_Target_Memory_Addr);
+/*
+    if(epd_mode == 2)
+        EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf, 1280-dia-x, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
+    else if(epd_mode == 1)
+        EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf, Panel_Width-dia-x-16, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
+    else
+        EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf, x, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
+*/
+    EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf2, x, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
+    //EPD_IT8951_1bp_Multi_Frame_Refresh(x, y, dia,  dia, Init_Target_Memory_Addr);
 
+    return(0);
+}
+
+int paintBackground() {
+ Display_BMP_Example((char *)"/home/pi/Dev/docs/Notebook2.bmp", Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_1);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -103,13 +146,27 @@ int paintBrush(double X_Center, double Y_Center, double Radius, bool touchDown) 
 
 int handleTasks() {
 
-    int i = 0;
+    UWORD radius = 20;
+    int loopcount = 0;
+    UWORD dia = brush_Radius*2;
 
     while(1){
-        
+       
+	//Debug("Query pen data...\r\n"); 
         tabletHandler->queryPenData();
+	loopcount++;
 
-        paintBrush(tabletData.transformedX, tabletData.transformedY, 20, tabletData.touchDown);
+	if (loopcount > 5) {
+        	if (tabletData.transformedX < 100) {
+                	//EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
+                	paintBackground();
+                	paintInit(brush_Radius);
+        	} else
+		if (tabletData.touchDown) {
+        		paintBrush(tabletData.transformedX-brush_Radius, tabletData.transformedY-brush_Radius, dia);
+		}
+		loopcount = 0;
+	}
 
         if(deviceInfo.refreshRateUS > 0){
             usleep(deviceInfo.refreshRateUS);
@@ -126,18 +183,18 @@ int main(int argc, char *argv[])
 {
     //Exception handling:ctrl + c
     signal(SIGINT, Handler);
-    int screen = 1;
+    int screen = 2;
     int status; 
-
-    CommandLineArgumentHandler commandLineArgumentHandler(&deviceInfo); 
-    commandLineArgumentHandler.init();
-    status = commandLineArgumentHandler.processArguments(argc, argv);
-    if (status != 0){ return(status); }
 
     //Init the BCM2835 Device
     if(DEV_Module_Init()!=0){
         return -1;
     }
+
+    CommandLineArgumentHandler commandLineArgumentHandler(&deviceInfo); 
+    commandLineArgumentHandler.init();
+    status = commandLineArgumentHandler.processArguments(argc, argv);
+    if (status != 0){ return(status); }
 
 /*
     sscanf(argv[1],"%d",&screen);
@@ -156,6 +213,7 @@ int main(int argc, char *argv[])
     Debug("\r\nDisplay screen:%d\r\n",screen);
     Debug("VCOM value:%d\r\n", VCOM);
     Debug("Display mode:%d\r\n", epd_mode);
+    Debug("Refresh Rate: %d\r\n", deviceInfo.refreshRateUS);
 
     swapSCREEN(screen);   //select the screen IO pins
     Dev_Info = EPD_IT8951_Init(VCOM);           // must reinitalize to work properly after swap I don't think all of the routines in this function are necessary here, it currently takes a few seconds for this funciton to run
@@ -177,15 +235,15 @@ int main(int argc, char *argv[])
     Debug("A2 Mode:%d\r\n", A2_Mode);
 
     //clear the screen
-	EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
+    EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
 
     //display the background
-    Display_BMP_Example((char *)"/home/pi/Dev/docs/Notebook.bmp", Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_4);
+    paintBackground();
+
+    paintInit(brush_Radius);
 
     //process the loop
     handleTasks();
-    TouchPanel_ePaper_Example(Panel_Width, Panel_Height, Init_Target_Memory_Addr);
-
 
     //We recommended refresh the panel to white color before storing in the warehouse.
     EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
@@ -201,3 +259,4 @@ int main(int argc, char *argv[])
     DEV_Module_Exit();
     return 0;
 }
+

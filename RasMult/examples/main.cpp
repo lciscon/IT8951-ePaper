@@ -86,6 +86,11 @@ void  Handler(int signo){
     exit(0);
 }
 
+int paintBackground() {
+   Display_BMP_Example((char *)"/home/pi/Dev/docs/Notebook2.bmp", Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_1);
+   return(0);
+}
+
 int paintInit(UWORD Radius) {
     UDOUBLE Imagesize;
     UWORD dia = Radius*2;
@@ -170,23 +175,26 @@ int subFrame(UBYTE *Buf, UWORD bufWidth, UBYTE *subBuf, UWORD x, UWORD y, UWORD 
     
 int paintBrush() {
     if ((Max_X == 0) || (Max_Y == 0)) return(0);
-        
-    UWORD width = Max_X - Min_X;
-    UWORD height = Max_Y - Min_Y;
-        
-    //Debug("Painting Brush: %d %d %d %d\r\n", Min_X, Min_Y, width, height);
-    subFrame(Refresh_Frame_Buf2, Paint.WidthByte, Refresh_Frame_Buf3, Min_X, Min_Y, width, height);
-    EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf3, Min_X, Min_Y, width,  height, A2_Mode, Init_Target_Memory_Addr, true);
-        
+
+    UWORD x;
+    UWORD y;        
+    UWORD width;
+    UWORD height;
+    
+    x = Min_X;
+    y = Min_Y;
+    width = Max_X - x;
+    height = Max_Y - y;
+    subFrame(Refresh_Frame_Buf2, Paint.WidthByte, Refresh_Frame_Buf3, x, y, width, height);
     Min_X = Panel_Width;
     Min_Y = Panel_Height;
     Max_X = 0;
     Max_Y = 0;
+        
+    //Debug("Painting Brush: %d %d %d %d\r\n", Min_X, Min_Y, width, height);
+    EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf3, x, y, width,  height, A2_Mode, Init_Target_Memory_Addr, true);
+        
     return(0);
-}
-
-int paintBackground() {
- Display_BMP_Example((char *)"/home/pi/Dev/docs/Notebook2.bmp", Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_1);
 }
 
 void updateDisplay() {
@@ -207,6 +215,7 @@ void updateDisplay() {
  */
 
 int handleTasks() {
+    bool resetDisplay = false;
 
     while(1){
         //Debug("Query pen data...\r\n");
@@ -214,19 +223,23 @@ int handleTasks() {
 
         if (tabletData.touchDown) {
                 addBrushPoint(tabletData.transformedX, tabletData.transformedY, brush_Radius);
-                if (tabletData.transformedX < 100) {
+                if ((tabletData.transformedX < 100) && (resetDisplay == false)) {
+                        resetDisplay = true;
+                        //EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
                         paintBackground();
                         paintInit(brush_Radius);
-                } 
+                } else if (tabletData.transformedX > 100) {
+                        resetDisplay = false;
+                }
         }
 
         if(deviceInfo.refreshRateUS > 0){
             usleep(deviceInfo.refreshRateUS);
         }
 
-    } 
+    }
 
-    return 0; 
+    return 0;
 
 }// end of ::HandleTasks
 

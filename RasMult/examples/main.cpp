@@ -12,6 +12,7 @@ extern "C" {
 
 #include <stdlib.h>     //exit()
 #include <signal.h>     //signal()
+#include <thread>
 
 #define Enhance false
 
@@ -41,6 +42,7 @@ UWORD Min_Y = 0;
 UWORD Max_Y = 0;
 
 UBYTE *Refresh_Frame_Buf2 = NULL;
+UBYTE *Refresh_Frame_Buf3 = NULL;
 
 UDOUBLE Init_Target_Memory_Addr;
 int epd_mode = 0;	//0: no rotate, no mirror
@@ -97,7 +99,12 @@ int paintInit(UWORD Radius) {
         return -1;
     }
 
-    Paint_NewImage(Refresh_Frame_Buf2, dia, dia, 0, BLACK);
+    if((Refresh_Frame_Buf3 = (UBYTE *)malloc(Imagesize)) == NULL){
+        Debug("Failed to apply for picture memory...\r\n");
+        return -1;
+    }
+
+    Paint_NewImage(Refresh_Frame_Buf2, Panel_Width, Panel_Height, 0, BLACK);
     Paint_SelectImage(Refresh_Frame_Buf2);
     //Epd_Mode(epd_mode);
     Paint_SetBitsPerPixel(1);
@@ -108,142 +115,69 @@ int paintInit(UWORD Radius) {
     Max_X = 0;
     Max_Y = 0;
 
-    //Paint_Clear(BLACK);
-    //Paint_DrawRectangle(0, 0, dia-1, dia-1, 0x00, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-    //Paint_DrawCircle(Radius, Radius, Radius, 0x00, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-
-    //EPD_IT8951_1bp_Multi_Frame_Write(Refresh_Frame_Buf2, 0, 0, dia,  dia, Init_Target_Memory_Addr, true);
     return(0);
 }
 
 int addBrushPoint(UWORD x, UWORD y, UWORD Radius) {
     Paint_DrawCircle(x, y, Radius, 0x00, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+    UWORD xval;
 
-    if (x - Radius < Min_X) { 
-        Min_X = x - Radius;
+    if (x - Radius < Min_X) {
+        xval = x - Radius;
+        Min_X = xval - (xval % 16);
+        //Debug("Min %d %d\r\n", xval, Min_X);
     }
     if (x + Radius > Max_X) {
-        Max_X = x + Radius;
+        xval = x + Radius;
+        Max_X = xval + 16 - (xval % 16);
+        //Debug("Max %d %d\r\n", xval, Max_X);
     }
 
-    if (y - Radius < Min_Y) { 
+    if (y - Radius < Min_Y) {
         Min_Y = y - Radius;
-    }
+    } 
     if (y + Radius > Max_Y) {
         Max_Y = y + Radius;
-    }
+    } 
 
     return(0);
 }
 
-/******************************************************************************
-function: Draw Pixels
-parameter:
-    Xpoint : At point X
-    Ypoint : At point Y
-    Color  : Painted colors
-******************************************************************************/
-/*
-void setPixel(UBYTE *buf, UWORD Xpoint, UWORD Ypoint, UWORD Color)
-{
-    UDOUBLE Addr = X * (Paint.BitsPerPixel) / 8 + Y * Paint.WidthByte;
 
-    switch( Paint.BitsPerPixel ){
-        case 8:{
-            buf[Addr] = Color & 0xF0;
-            break;
+int subFrame(UBYTE *Buf, UWORD bufWidth, UBYTE *subBuf, UWORD x, UWORD y, UWORD width, UWORD height) {
+    UBYTE val; 
+    UWORD xByte;                        
+    UWORD j,k;                          
+    UWORD widthByte;
+
+    widthByte = width * (Paint.BitsPerPixel) / 8;
+    xByte = x * (Paint.BitsPerPixel) / 8;
+    
+    Debug("Sub Frame: %d %d (%d %d) %d %d\r\n", x, y, width, height, xByte, widthByte);
+        
+    for (k =0 ; k < height; k++) {
+        for (j = 0; j < widthByte; j++) {
+            val = Buf[xByte + j + (y+k)*bufWidth];
+            //Debug("%u ",(unsigned int)val);
+            subBuf[j+k*widthByte] = val;
         }
-        case 4:{
-            buf[Addr] &= ~( (0xF0) >> (7 - (X*4+3)%8 ) );
-            buf[Addr] |= (Color & 0xF0) >> (7 - (X*4+3)%8 );
-            break;
-        }
-        case 2:{
-            buf[Addr] &= ~( (0xC0) >> (7 - (X*2+1)%8 ) );
-            buf[Addr] |= (Color & 0xC0) >> (7 - (X*2+1)%8 );
-            break;
-        }
-        case 1:{
-            buf[Addr] &= ~( (0x80) >> (7 - X%8) );
-            buf[Addr] |= (Color & 0x80) >> (7 - X%8);
-            break;
-        }
+        //Debug("\r\n");
     }
-}
-
-UWORD getPixel(UBYTE *buf, UWORD Xpoint, UWORD Ypoint)
-{
-    UDOUBLE Addr = X * (Paint.BitsPerPixel) / 8 + Y * Paint.WidthByte;
-
-    switch( Paint.BitsPerPixel ){
-        case 8:{
-            buf[Addr] = Color & 0xF0;
-            break;
-        }
-        case 4:{
-            Paint.Image[Addr] &= ~( (0xF0) >> (7 - (X*4+3)%8 ) );
-            Paint.Image[Addr] |= (Color & 0xF0) >> (7 - (X*4+3)%8 );
-            break;
-        }
-        case 2:{
-            Paint.Image[Addr] &= ~( (0xC0) >> (7 - (X*2+1)%8 ) );
-            Paint.Image[Addr] |= (Color & 0xC0) >> (7 - (X*2+1)%8 );
-            break;
-        }
-        case 1:{
-            Paint.Image[Addr] &= ~( (0x80) >> (7 - X%8) );
-            Paint.Image[Addr] |= (Color & 0x80) >> (7 - X%8);
-            break;
-        }
-    }
-}
-*/
-
-void setPixel(UBYTE *buf, UWORD Xpoint, UWORD Ypoint, UBYTE val)
-{
-    UBYTE Addr = X * (Paint.BitsPerPixel) / 8 + Y * Paint.WidthByte;
-    buf[Addr] = val;
-}
-
-UBYTE getPixel(UBYTE *buf, UWORD Xpoint, UWORD Ypoint)
-{
-    UBYTE Addr = X * (Paint.BitsPerPixel) / 8 + Y * Paint.WidthByte;
-    return(buf[Addr]);
-}
-
-
-
-UBYTE *subFrame(UBYTE *Buf, x, y, width, height) {
-    UBYTE *subBuf;
-    UBYTE val;
-
-    Imagesize = ((width * 1 % 8 == 0)? (width * 1 / 8 ): (width * 1 / 8 + 1)) * height;
-
-    //Imagesize = ((dia * 1 % 8 == 0)? (dia * 1 / 8 ): (dia * 1 / 8 + 1)) * dia;
-    if((subBuf = (UBYTE *)malloc(Imagesize)) == NULL){
-        Debug("Failed to apply for picture memory...\r\n");
-        return -1;
-    }
-
-    for (j = 0; j++; j < width) {
-        for (k =0 ; k++; k < height) {
-            val = getPixel(Buf, j+x,k+x);
-            setPixel(subBuf, j,k,val);
-        }
-    }
-
- 
-    return(subBuf);
-}
-
-
+        
+    return(0);
+}       
+    
+    
 int paintBrush() {
     if ((Max_X == 0) || (Max_Y == 0)) return(0);
-    
+        
     UWORD width = Max_X - Min_X;
-    UWORD height = Max_Y = Min_Y;
-    Refresh_Frame_Buf3 = subFrame(Refresh_Frame_Buf2, Min_X, Min_Y, width, height);
+    UWORD height = Max_Y - Min_Y;
+        
+    //Debug("Painting Brush: %d %d %d %d\r\n", Min_X, Min_Y, width, height);
+    subFrame(Refresh_Frame_Buf2, Paint.WidthByte, Refresh_Frame_Buf3, Min_X, Min_Y, width, height);
     EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf3, Min_X, Min_Y, width,  height, A2_Mode, Init_Target_Memory_Addr, true);
+        
     Min_X = Panel_Width;
     Min_Y = Panel_Height;
     Max_X = 0;
@@ -251,36 +185,17 @@ int paintBrush() {
     return(0);
 }
 
-
-//-------------------------------------------------------------------------------------------------
-// ::paintBrush
-//
-/**
- * 
- * Paint the brush at a specific point on the screen.
- * 
- */
-
-/*
-int paintBrush(UWORD x, UWORD y, UWORD dia) {
-
-//    if(epd_mode == 2)
-//        EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf, 1280-dia-x, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
-//    else if(epd_mode == 1)
-//        EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf, Panel_Width-dia-x-16, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
-//    else
-//        EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf, x, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
-
-    EPD_IT8951_1bp_Refresh(Refresh_Frame_Buf2, x, y, dia,  dia, A2_Mode, Init_Target_Memory_Addr, true);
-    //EPD_IT8951_1bp_Multi_Frame_Refresh(x, y, dia,  dia, Init_Target_Memory_Addr);
-
-    return(0);
-}
-*/
-
 int paintBackground() {
  Display_BMP_Example((char *)"/home/pi/Dev/docs/Notebook2.bmp", Panel_Width, Panel_Height, Init_Target_Memory_Addr, BitsPerPixel_1);
 }
+
+void updateDisplay() {
+    while (1==1) {
+       paintBrush();
+       usleep(200000);
+    }
+}
+
 
 //-------------------------------------------------------------------------------------------------
 // ::handleTasks
@@ -293,38 +208,25 @@ int paintBackground() {
 
 int handleTasks() {
 
-    UWORD radius = 20;
-    int loopcount = 0;
-    UWORD dia = brush_Radius*2;
-
     while(1){
-       
-	//Debug("Query pen data...\r\n"); 
+        //Debug("Query pen data...\r\n");
         tabletHandler->queryPenData();
-	loopcount++;
 
-    addBrushPoint(tabletData.transformedX-brush_Radius, tabletData.transformedY-brush_Radius, brush_Radius);
-
-	if (loopcount > 5) {
-        	if (tabletData.transformedX < 100) {
-                	//EPD_IT8951_Clear_Refresh(Dev_Info, Init_Target_Memory_Addr, INIT_Mode);
-                	paintBackground();
-                	paintInit(brush_Radius);
-        	} else
-		if (tabletData.touchDown) {
-                paintBrush();
-//        		paintBrush(tabletData.transformedX-brush_Radius, tabletData.transformedY-brush_Radius, dia);
-		}
-		loopcount = 0;
-	}
+        if (tabletData.touchDown) {
+                addBrushPoint(tabletData.transformedX, tabletData.transformedY, brush_Radius);
+                if (tabletData.transformedX < 100) {
+                        paintBackground();
+                        paintInit(brush_Radius);
+                } 
+        }
 
         if(deviceInfo.refreshRateUS > 0){
             usleep(deviceInfo.refreshRateUS);
         }
 
-    }
+    } 
 
-    return 0;
+    return 0; 
 
 }// end of ::HandleTasks
 

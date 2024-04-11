@@ -129,12 +129,12 @@ int addBrushPoint(UWORD x, UWORD y, UWORD Radius) {
 
     if (x - Radius < Min_X) {
         xval = x - Radius;
-        Min_X = xval - (xval % 16);
+        Min_X = xval - (xval % 32);
         //Debug("Min %d %d\r\n", xval, Min_X);
     }
     if (x + Radius > Max_X) {
         xval = x + Radius;
-        Max_X = xval + 16 - (xval % 16);
+        Max_X = (xval % 32 == 0)?xval:xval + 32 - (xval % 32);
         //Debug("Max %d %d\r\n", xval, Max_X);
     }
 
